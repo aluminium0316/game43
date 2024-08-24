@@ -1,6 +1,6 @@
 use macroquad::texture::Texture2D;
 
-use super::{chunk::BlockPos, drill::Drill, ore::CoalOre};
+use super::{chunk::BlockPos, drill::Drill, event::Event, ore::CoalOre};
 
 pub struct Side;
 impl Side {
@@ -15,12 +15,13 @@ impl Side {
 pub trait MultiBlock {
     fn place_offset(&self, pos: BlockPos) -> Vec<BlockPos>;
     fn render(&self, assets: &Vec<Texture2D>, pos: BlockPos);
+    fn update(&mut self, ticks: u64) -> Event;
 }
 
 pub fn place(id: u64) -> Box<dyn MultiBlock> {
     match id {
         0 => Box::new(CoalOre {}),
-        1 => Box::new(Drill {}),
+        1 => Box::new(Drill::default()),
         _ => Box::new(Error),
     }
 }
@@ -36,5 +37,8 @@ impl MultiBlock for Error {
     }
     fn render(&self, assets: &Vec<Texture2D>, pos: BlockPos) {
 
+    }
+    fn update(&mut self, ticks: u64) -> Event {
+        Event::None
     }
 }

@@ -25,4 +25,8 @@ impl MultiBlock for CoalOre {
 
         draw_mesh(&mesh);
     }
+
+    fn update(&mut self, ticks: u64) -> super::event::Event {
+        super::event::Event::None
+    }
 }

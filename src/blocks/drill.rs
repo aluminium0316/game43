@@ -1,17 +1,20 @@
 use macroquad::prelude::*;
 
-use crate::mesh::MeshBuilder;
+use crate::{items::{filter::Filter, inventory::{Inventory, Storage}, items::{Item, ItemId}}, mesh::MeshBuilder};
 
-use super::{block::MultiBlock, chunk::BlockPos};
+use super::{block::MultiBlock, chunk::BlockPos, event::Event};
 
+#[derive(Default)]
 pub struct Drill {
-    
+    inv: Inventory,
+    progress: u64,
 }
 
 impl MultiBlock for Drill {
     fn place_offset(&self, pos: BlockPos) -> Vec<BlockPos> {
         vec![
             BlockPos::new(0, 0, 0),
+            BlockPos::new(0, 1, 0),
         ]
     }
 
@@ -28,5 +31,28 @@ impl MultiBlock for Drill {
             .build();
 
         draw_mesh(&mesh);
+    }
+
+    fn update(&mut self, ticks: u64) -> super::event::Event {
+
+        self.progress += 1;
+
+        if self.progress == 64 {
+            self.progress = 0;
+            Event::Craft { input: Vec::new(), output: vec![Item::new(ItemId::Coal, 1)] }
+        }
+        else {
+            Event::None
+        }
+    }
+}
+
+impl Storage for Drill {
+    fn insert(&mut self, items: Vec<Item>) {
+        self.inv.insert(items);
+    }
+
+    fn extract(&mut self, count: u64, filter: Filter) -> Vec<Item> {
+        self.inv.extract(count, filter)
     }
 }

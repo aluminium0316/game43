@@ -2,7 +2,7 @@ use std::{arch::x86_64::_CMP_GE_OS, collections::HashMap};
 
 use macroquad::prelude::*;
 
-use super::block::MultiBlock;
+use super::{block::MultiBlock, event::Event};
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash)]
 pub struct BlockPos {
@@ -81,6 +81,27 @@ impl Chunk {
     pub fn render(&self, assets: &Vec<Texture2D>) {
         for (_id, (multiblock, pos)) in &self.blocks {
             multiblock.render(assets, *pos);
+        }
+    }
+
+    pub fn update(&mut self, ticks: u64) {
+        let mut events = Vec::new();
+        for (_id, (multiblock, _pos)) in &mut self.blocks {
+            let event = multiblock.update(ticks);
+            match event {
+                Event::None => {}
+                _ => {
+                    events.push(event);
+                }
+            }
+        }
+        while !events.is_empty() {
+            let mut new_events = Vec::new();
+            for event in &events {
+                
+            }
+            events.clear();
+            events.append(&mut new_events);
         }
     }
 }

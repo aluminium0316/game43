@@ -19,7 +19,7 @@ impl Player {
         }
     }
 
-    pub fn update(&mut self, input: &Input, chunk: &mut Chunk) {
+    pub fn update(&mut self, input: &mut Input, chunk: &mut Chunk) {
         if is_mouse_button_down(MouseButton::Left) {
             self.dir.x -= input.dy / 1.5;
             self.dir.y += input.dx / 1.5;
@@ -37,6 +37,14 @@ impl Player {
         }
         if input.key[key!(D)] {
             v.x -= 1.0;
+        }
+        if input.down[key!(Q)] < 4 {
+            input.down[key!(Q)] = 4;
+            self.pos.y += 1.0;
+        }
+        if input.down[key!(E)] < 4 && self.pos.y > 0.0 {
+            input.down[key!(E)] = 4;
+            self.pos.y -= 1.0;
         }
 
         if input.down[2] == 0 {

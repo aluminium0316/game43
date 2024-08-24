@@ -1,7 +1,7 @@
-use crate::items::items::Item;
+use crate::items::{filter::Filter, items::Item};
 
-enum Event {
-    Craft,
-    Push(Vec<Item>),
-    Pull(Vec<Item>)
+pub enum Event {
+    None,
+    Craft { input: Vec<Item>, output: Vec<Item> },
+    Pull { count: u64, filter: Filter },
 }
