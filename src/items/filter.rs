@@ -1,5 +1,6 @@
 use super::items::Item;
 
+#[derive(Clone)]
 pub struct Filter {
     f: Vec<Vec<String>>,
 }
@@ -19,7 +20,7 @@ impl Filter {
         }
     }
 
-    pub fn filter(&self, items: Vec<Item>)  -> Vec<Item>{
+    pub fn filter(&self, items: Vec<Item>) -> Vec<Item> {
         items
     }
 }

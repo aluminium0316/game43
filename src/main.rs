@@ -3,15 +3,17 @@ mod player;
 mod blocks;
 mod mesh;
 mod items;
+mod ui;
 
 use blocks::chunk::Chunk;
 use input::Input;
 use macroquad::prelude::*;
 use player::Player;
+use ui::jade::Jade;
 
 fn window_conf() -> Conf {
     Conf {
-        window_title: "41".to_owned(),
+        window_title: "43".to_owned(),
         ..Default::default()
     }
 }
@@ -21,6 +23,7 @@ async fn main() {
     let mut input = Input::new();
     let mut players = vec![Player::new()];
     let mut chunk = Chunk::new();
+    let mut jade = Jade::new();
 
     let t = std::time::Instant::now();
     let mut prev_ns = 0;
@@ -71,6 +74,7 @@ async fn main() {
                 player.update(&mut input, &mut chunk);
             }
             chunk.update(ticks);
+            jade.update(&players, &chunk);
             input.update();
 
             i += 1;
@@ -92,12 +96,18 @@ async fn main() {
         }
 
         chunk.render(&assets);
+
+        set_default_camera();
+        gl_use_default_material();
+
+        jade.ui(&assets);
+        players[0].ui();
         
         next_frame().await
     }
 }
 
-const FRAGMENT_SHADER: &'static str = "#version 330
+const FRAGMENT_SHADER: &'static str = "#version 100
 precision lowp float;
 
 varying vec2 uv;
@@ -113,7 +123,7 @@ void main() {
 }
 ";
 
-const VERTEX_SHADER: &'static str = "#version 330
+const VERTEX_SHADER: &'static str = "#version 100
 precision lowp float;
 
 attribute vec3 position;

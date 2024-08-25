@@ -2,7 +2,7 @@ use macroquad::prelude::*;
 
 use crate::{items::{filter::Filter, inventory::{Inventory, Storage}, items::{Item, ItemId}}, mesh::MeshBuilder};
 
-use super::{block::MultiBlock, chunk::BlockPos, event::Event};
+use super::{block::{MultiBlock, Side}, chunk::BlockPos, event::Event};
 
 #[derive(Default)]
 pub struct Drill {
@@ -33,26 +33,39 @@ impl MultiBlock for Drill {
         draw_mesh(&mesh);
     }
 
-    fn update(&mut self, ticks: u64) -> super::event::Event {
-
+    fn update(&mut self, ticks: u64) -> Vec<Event> {
         self.progress += 1;
 
-        if self.progress == 64 {
+        if self.progress == 256 {
             self.progress = 0;
-            Event::Craft { input: Vec::new(), output: vec![Item::new(ItemId::Coal, 1)] }
+            vec![
+                Event::Craft { input: Vec::new(), output: vec![Item::new(ItemId::Coal, 1)] }
+            ]
         }
         else {
-            Event::None
+            vec![]
         }
+    }
+
+    fn log(&self, pos: BlockPos) -> String {
+        format!("progress: {} / 256\n{}", self.progress, self.inv.view())
+    }
+
+    fn as_storage(&mut self) -> Option<&mut dyn Storage> {
+        Some(self)
     }
 }
 
 impl Storage for Drill {
     fn insert(&mut self, items: Vec<Item>) {
-        self.inv.insert(items);
+        self.inv.insert(items)
     }
 
-    fn extract(&mut self, count: u64, filter: Filter) -> Vec<Item> {
+    fn extract(&mut self, count: u64, filter: Filter, side: Side) -> Vec<Item> {
         self.inv.extract(count, filter)
+    }
+
+    fn craft(&mut self, items: Vec<Item>, output: Vec<Item>) {
+        self.inv.craft(items, output)
     }
 }

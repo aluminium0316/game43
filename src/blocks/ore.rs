@@ -1,7 +1,7 @@
 use macroquad::prelude::*;
 use crate::mesh::MeshBuilder;
 
-use super::{block::MultiBlock, chunk::BlockPos};
+use super::{block::MultiBlock, chunk::BlockPos, event::Event};
 
 pub struct CoalOre {
     
@@ -26,7 +26,7 @@ impl MultiBlock for CoalOre {
         draw_mesh(&mesh);
     }
 
-    fn update(&mut self, ticks: u64) -> super::event::Event {
-        super::event::Event::None
+    fn update(&mut self, ticks: u64) -> Vec<Event> {
+        vec![]
     }
 }

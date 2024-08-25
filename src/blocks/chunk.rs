@@ -1,8 +1,8 @@
-use std::{arch::x86_64::_CMP_GE_OS, collections::HashMap};
+use std::collections::HashMap;
 
 use macroquad::prelude::*;
 
-use super::{block::MultiBlock, event::Event};
+use super::{block::{MultiBlock, Side, X1, X2, Y2, Y1, Z1, Z2}, event::Event};
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash)]
 pub struct BlockPos {
@@ -26,6 +26,27 @@ impl std::ops::Add for BlockPos {
 
     fn add(self, rhs: Self) -> Self::Output {
         BlockPos::new(self.x+rhs.x, self.y+rhs.y, self.z+rhs.z)
+    }
+}
+
+impl std::ops::Add<Side> for BlockPos {
+    type Output = BlockPos;
+
+    fn add(self, rhs: Side) -> Self::Output {
+        BlockPos::new(self.x + if1(rhs, X1) - if1(rhs, X2), self.y + if1(rhs, Y1) - if1(rhs, Y2), self.z + if1(rhs, Z1) - if1(rhs, Z2))
+    }
+}
+
+fn if1(a: Side, b: Side) -> i64 {
+    if a & b != 0 { 1 } else { 0 }
+}
+
+impl std::ops::Add<Vec3> for BlockPos {
+    type Output = Vec3;
+
+    fn add(self, rhs: Vec3) -> Self::Output {
+        let lhs: Vec3 = self.into();
+        lhs + rhs
     }
 }
 
@@ -58,7 +79,11 @@ impl Chunk {
         }
     }
 
-    pub fn add_block(&mut self, center: BlockPos, block: Box<dyn MultiBlock>) -> bool {
+    pub fn add_block(&mut self, center: BlockPos, blocks: Option<Box<dyn MultiBlock>>) -> bool {
+        if blocks.is_none() {
+            return false;
+        }
+        let block = blocks.unwrap();
         let mut fail = false;
         for pos in block.place_offset(center) {
             if let Some(_) = self.access.get(&(pos + center.clone())) {
@@ -86,22 +111,65 @@ impl Chunk {
 
     pub fn update(&mut self, ticks: u64) {
         let mut events = Vec::new();
-        for (_id, (multiblock, _pos)) in &mut self.blocks {
+        for (id, (multiblock, _pos)) in &mut self.blocks {
             let event = multiblock.update(ticks);
-            match event {
-                Event::None => {}
-                _ => {
-                    events.push(event);
-                }
-            }
+            events.append(&mut event
+                .iter()
+                .map(|x| (x.clone(), id.clone()))
+                .collect());
         }
         while !events.is_empty() {
             let mut new_events = Vec::new();
             for event in &events {
-                
+                match &event.0 {
+                    Event::Craft { input, output } => {
+                        if let Some(block) = self.blocks.get_mut(&event.1) {
+                            if let Some(storage) = block.0.as_storage() {
+                                storage.craft(input.clone(), output.clone());
+                            }
+                        }
+                    },
+                    Event::Pull { count, filter, side } => {
+                        let blocks: *mut HashMap<u64, (Box<dyn MultiBlock>, BlockPos)> = &mut self.blocks as *mut HashMap<u64, (Box<dyn MultiBlock>, BlockPos)>;
+                        if let Some(block) = unsafe { blocks.as_mut().unwrap() }.get_mut(&event.1) {
+                            if let Some(access) = self.access.get(&(block.1 + side.clone())) {
+                                if let Some(input_block) = unsafe { blocks.as_mut().unwrap() }.get_mut(&access) {
+                                    if let Some(input_storage) = input_block.0.as_storage() {
+                                        let extract = input_storage.extract(count.clone(), filter.clone(), 0);
+                                        if let Some(storage) = block.0.as_storage() {
+                                            storage.insert(extract);
+                                        }
+                                        // let event1 = input_block.0.event(event.0.clone());
+                                        // new_events.append(&mut event1
+                                        //     .iter()
+                                        //     .map(|x| (x.clone(), access.clone()))
+                                        //     .collect());
+                                    }
+                                }
+                            }
+                        }
+                    },
+                }
+                if let Some(block) = self.blocks.get_mut(&event.1) {
+                    block.0.event_callback(event.0.clone());
+                }
             }
             events.clear();
             events.append(&mut new_events);
+        }
+    }
+
+    pub fn log_block(&self, pos: BlockPos) -> String {
+        if let Some(access) = self.access.get(&pos) {
+            if let Some(block) = self.blocks.get(access) {
+                block.0.log(block.1)
+            }
+            else {
+                "Corrupted block".to_owned()
+            }
+        }
+        else {
+            "No block".to_owned()
         }
     }
 }

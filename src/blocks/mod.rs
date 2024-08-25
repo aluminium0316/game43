@@ -1,5 +1,6 @@
 pub mod chunk;
 pub mod block;
-mod ore;
-mod drill;
+pub mod ore;
+pub mod drill;
 pub mod event;
+pub mod conveyor;

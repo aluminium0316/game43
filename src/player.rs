@@ -2,12 +2,14 @@
 use core::f32;
 
 use macroquad::prelude::*;
-use crate::{blocks::{block::{place, MultiBlock}, chunk::{BlockPos, Chunk}}, input::Input, key, mesh::{self, vertex, MeshBuilder}};
+use crate::{blocks::{block::MultiBlock, chunk::{BlockPos, Chunk}}, input::Input, items::items::{Item, ItemId}, key, mesh::{self, vertex, MeshBuilder}};
 
 pub struct Player {
     pos: Vec3,
     vel: Vec3,
     dir: Vec2,
+    inventory: Vec<Item>,
+    selected: usize,
 }
 
 impl Player {
@@ -16,6 +18,11 @@ impl Player {
             pos: Vec3::default(),
             vel: Vec3::default(),
             dir: Vec2::default(),
+            inventory: vec![
+                Item::new(ItemId::Drill, 1),
+                Item::new(ItemId::Conveyor, 1),
+            ],
+            selected: 0,
         }
     }
 
@@ -46,9 +53,16 @@ impl Player {
             input.down[key!(E)] = 4;
             self.pos.y -= 1.0;
         }
+        if input.down[key!(Key1)] < 4 {
+            input.down[key!(Key1)] = 4;
+            self.selected += 1;
+            if self.selected > self.inventory.len() - 1 {
+                self.selected = 0;
+            }
+        }
 
         if input.down[2] == 0 {
-            if !chunk.add_block(BlockPos::new(self.pos.x.floor() as i64, self.pos.y.floor() as i64, self.pos.z.floor() as i64), place(1)) {
+            if !chunk.add_block(self.block_pos(), self.inventory[self.selected].id.to_block()) {
                 println!("failed to place");
             }
         }
@@ -88,13 +102,25 @@ impl Player {
         draw_mesh(&mesh);
     }
 
+    pub fn ui(&self) {
+        let mut i = 0;
+        for item in &self.inventory {
+            draw_text(&format!("{:?}", item), screen_width() / 2.0 - 256.0 + 8.0, screen_height() / 2.0 - 144.0 + 8.0 + i as f32 * 16.0, 16.0, if i == self.selected { BLUE } else { BLACK });
+            i += 1;
+        }
+    }
+
     pub fn camera(&self) {
         set_camera(&Camera3D {
-            position: self.pos - 8.0 * vec3(self.dir.x.sin() * self.dir.y.sin(), self.dir.x.cos(), self.dir.x.sin() * self.dir.y.cos()),
+            position: self.pos - 6.0 * vec3(self.dir.x.sin() * self.dir.y.sin(), self.dir.x.cos(), self.dir.x.sin() * self.dir.y.cos()),
             target: self.pos,
             fovy: 90.0,
             up: Vec3::Y,
             ..Default::default()
         });
+    }
+
+    pub fn block_pos(&self) -> BlockPos {
+        BlockPos::new(self.pos.x.floor() as i64, self.pos.y.floor() as i64, self.pos.z.floor() as i64)
     }
 }
